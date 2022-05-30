@@ -1,0 +1,16 @@
+# Plotting and exporting confusion matrix of best performing model-setting = (II)
+
+conf_mat_ebt = confusion_matrix(y_true, y_pred)
+
+fig = plt.subplots(figsize=(5,5))
+ax = sns.heatmap(conf_mat_ebt, annot=True, cmap='Blues', fmt='g' , cbar = False)
+
+ax.set_title('Confusion Matrix Best EBT\n');
+ax.set_xlabel('\nPredicted Values')
+ax.set_ylabel('Actual Values ');
+
+## Ticket labels - List must be in alphabetical order
+ax.xaxis.set_ticklabels(target_names)
+ax.yaxis.set_ticklabels(target_names)
+
+plt.savefig('C:/Some_User/Some_Folder/ebt_best_model.png')
