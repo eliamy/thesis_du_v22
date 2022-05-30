@@ -1,0 +1,39 @@
+#Re-labelling data for binary setting and running gridsearch the same way as multiclass setting.
+
+# Re-label all class 1 & 2 as 'Class A' and all class 3 & 4 as 'Class B'
+# data is a dataframe of extracted sound featrues for each clip and corresponding road class
+data_binary = data.copy()
+
+data_binary.loc[data_binary['road class'] == 'Class 1', 'road class'] = 'Class A'
+data_binary.loc[data_binary['road class'] == 'Class 2', 'road class'] = 'Class A'
+
+data_binary.loc[data_binary['road class'] == 'Class 3', 'road class'] = 'Class B'
+data_binary.loc[data_binary['road class'] == 'Class 4', 'road class'] = 'Class B'
+
+target_names_binary = ['Class A', 'Class B']
+
+
+#Example of gridsearch svm in binary setting
+#Features in base format selected through ANOVA, with oversampling (II)
+#param_list_svm being a list of parameter combinations to test. Using same grid search function as for the multiclass case
+
+best_pred_svm, best_y_svm, best_params_svm = grid_eval_svm(data_binary, features, True, True, False, param_list_svm)
+print('\n*Classification Report:\n',classification_report(best_y_svm, best_pred_svm, target_names = target_names_binary, digits = 4))
+
+
+#Example of gridsearch Random Forest in binary setting
+#Features in base format selected through ANOVA, with oversampling (II)
+#param_list_rf being a list of parameter combinations to test. Using same grid search function as for the multiclass case
+
+best_pred_rf, best_y_rf, best_params_rf = grid_eval_rf(data_binary, features, True, True, False, param_list_rf)
+print('\n*Classification Report:\n',classification_report(best_y_rf, best_pred_rf, target_names = target_names_binary, digits = 4))
+print(best_params_rf)
+
+
+#Example of gridsearch EBT in binary setting
+#Features in base format selected through ANOVA, with oversampling (II)
+#param_list_ebt being a list of parameter combinations to test. Using same grid search function as for the multiclass case
+
+best_pred_ebt, best_y_ebt, best_params_ebt = grid_eval_ebt(data_binary, features, True, True, False, param_list_ebt)
+print('\n*Classification Report:\n',classification_report(best_y_ebt, best_pred_ebt, target_names = target_names_binary, digits = 4))
+print(best_params_ebt)
