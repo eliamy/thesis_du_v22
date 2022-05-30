@@ -1,0 +1,49 @@
+#This function iterates of a list of different parameters, calling the "evaluate_model" to 
+# perfrom cross-validation scoring of all parameter setting
+
+def grid_eval_svm(data, features_to_test, oversampling_bol, anova_bol, pca_bol, param_list_svm):
+    best_params = []
+    best_f1 = 0
+    #iterate of all combinations if param list
+    for k in range(len(param_list_svm)):
+            print(k)
+            model = SVC(C = param_list_svm[k][0], 
+                            gamma = param_list_svm[k][1],
+                            kernel = param_list_svm[k][2],
+                            degree = param_list_svm[k][3])
+           
+           #calling the evaluate_model() function  
+            predictions, true_label = evaluate_model(data, model, features_to_test, 
+                                                     over = oversampling_bol, do_anova = anova_bol, do_pca = pca_bol)
+            y_true = numpy.concatenate(true_label)
+            y_pred = numpy.concatenate(predictions)
+
+            f_one = f1_score(y_true, y_pred, average = 'macro')
+
+            if f_one > best_f1: #get predictions of best model and get paramaterers of said model
+                best_f1 = f_one
+                best_pred = y_pred
+                best_y = y_true
+                best_params = [param_list_svm[k][0], param_list_svm[k][1], param_list_svm[k][2], param_list_svm[k][3]]
+    return(best_pred, best_y, best_params)
+    
+#Example of calling the grid search function
+
+# Parameters to be tested in all different settings.
+# starting of using larger step-sizes between parameters then running again with reduced "search-grid" with smaller step sizes
+cost = [1, 0.1, 0.001]
+gamma = ['scale', 1, 0.01, 0.001] # relevant for rbf-kernel
+kernel = ['rbf', 'poly']
+degree = [1,2,3] # relevant for poly-kernel
+
+
+param_list_svm = []    
+for i in cost:        
+    for j in gamma:
+        for l in kernel:
+            for m in degree:
+                    param_list_svm.append(( i, j, l, m))
+                    
+#Features in base format, with oversampling (II). Requires the evaluate_model() function
+best_pred_svm, best_y_svm, best_params_svm = grid_eval_svm(data, features, True, True, False, param_list_svm)
+print('\n*Classification Report:\n',classification_report(best_y_svm, best_pred_svm, target_names = target_names))                    
