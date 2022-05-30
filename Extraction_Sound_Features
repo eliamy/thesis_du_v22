@@ -1,1 +1,126 @@
+import pandas
+import scipy
+import matplotlib.pyplot as plt
+import numpy
+import moviepy
+import librosa
+import librosa.display
+import os
+import moviepy
+import librosa
+import librosa.display
+from collections import ChainMap
 
+
+# function to aggregate features into single metrics for each audioclip.
+# returns a dictionary of statistical aggregations of the input feature
+def feature_aggregation_2(feature_array, feature_type):
+    feature_mean = numpy.mean(feature_array)
+    feature_median = numpy.median(feature_array)
+    feature_std = numpy.std(feature_array)
+    
+    feature_up_quart = numpy.quantile(feature_array, 0.75)
+    feature_low_quart = numpy.quantile(feature_array, 0.25)
+    
+    feature_skew = scipy.stats.skew(feature_array)
+    feature_kurtos = scipy.stats.kurtosis(feature_array)
+    
+    stats_dict = {
+        feature_type+'_mean' : feature_mean ,
+        feature_type+'_median' : feature_median , 
+        feature_type+'_std' : feature_std,
+        
+        feature_type+'_0.75_qrt' : feature_up_quart ,
+        feature_type+'_0.25_qrt' : feature_low_quart ,
+        
+        feature_type+'_skew' : feature_skew ,
+        feature_type+'_kurtos' : feature_kurtos        
+                }
+    
+    return stats_dict
+    
+    
+# function for aggregating mfccs matrix
+def mfcc_agg_2(mfcc_matrix):
+    
+    mfcc_dict_list = []
+    
+    df_mfcc = pandas.DataFrame(mfcc_matrix)
+        
+    for index, row in df_mfcc.iterrows():
+        mfcc_dict_list.append( {            
+            'coef_'+str(index+1)+'_mean': numpy.mean(row) ,
+            'coef_'+str(index+1)+'_std' : numpy.std(row) , 
+            'coef_'+str(index+1)+'_median' : numpy.median(row) ,
+
+            'coef_'+str(index+1)+'_0.25qrt' : numpy.quantile(row, 0.25) , 
+            'coef_'+str(index+1)+'_0.75qrt' : numpy.quantile(row, 0.75) ,
+
+            'coef_'+str(index+1)+'_skew' : scipy.stats.skew(row) ,
+            'coef_'+str(index+1)+'_kurtosis' : scipy.stats.kurtosis(row)
+                             } )
+        
+    mfcc_dict = dict(ChainMap(*mfcc_dict_list))
+
+    return mfcc_dict
+    
+    
+
+# Function to load audio clips from a folder and calculate audio-feature data. For each clip "gravel class" and 
+# certain features are extracted/calculated and stored in a list. This list is later appended to a "master"-list which
+# holds feature data for all clips in the present folder.  
+
+# number of samples and overlap for stft in librosa, some functions like spectral_bandwidth() does stft on its own 
+# and then frame and hop lenght is specified when calling the function. For mfcc's they have to specified by keyword argument
+kwargs_mfcc = {'hop_length' : 1024, 'n_fft' : 2048} 
+
+def feature_extraction(audio_path):
+    with os.scandir(audio_path) as it: # scan the folder of audio clips
+        
+        data = [] #list of lists holding feature data for all audio-clips. Later converted to DataFrame
+        
+        for entry in it:
+            data_per_clip = [] #list holding feature data for a single clip
+            
+            if entry.name.endswith(".wav") and entry.is_file():
+                audioclip, sample_rate = librosa.load(entry.path, sr=44100) #load current 5-second audio from audio directory 
+                
+                #For spectral bandwidth and centroid extreme-values at start and end is removed using [4:427] as indeces to be indcluded
+                spc_audio = librosa.feature.spectral_centroid(y = audioclip, sr=44100, n_fft = 2048, hop_length = 1024)[0] #get spectral-centroid of clip
+                spc_agg = feature_aggregation_2(spc_audio[4:427], 'spc') #callling aggregate function on spectral-centroid array
+                
+                spb_audio = librosa.feature.spectral_bandwidth(y = audioclip, sr=44100, n_fft = 2048, hop_length = 1024)[0] #get spectral-bandwidth of clip
+                spb_agg = feature_aggregation_2(spb_audio[4:427], 'spb') #callling aggregate function on spectral-bandwidth array
+                
+                no_onset = len(librosa.onset.onset_detect(y=audioclip, sr=44100, hop_length = 1024, units = "time")) # get number of detected onsets in clip
+                number_onsets = {'no_onsets': no_onset}
+                
+                onset_strength = librosa.onset.onset_strength(y = audioclip, sr=44100) # get the strength of the onsets
+                onset_strength_agg = feature_aggregation_2(onset_strength[8:427], 'onset_strength')
+                
+                rms_audio = librosa.feature.rms(y = audioclip, frame_length = 2048, hop_length = 1024) # calculate the root-mean-square energy of frames clip
+                rms_agg = feature_aggregation_2(rms_audio[0], 'rms')
+                
+                zero_crossings = sum(librosa.zero_crossings(audioclip)) #get number of zero crossings in audio-clip
+                number_zcr = {'zcr' : zero_crossings}
+                
+                mfccs = librosa.feature.mfcc(y = audioclip, n_mfcc = 12, sr = 44100, **kwargs_mfcc) # caclulate the first 12 mfcc's
+                mfcc_dict = mfcc_agg_2(mfccs)
+                
+                # get the assigned gravel class as a variable, later used as target-varible. Gravel class stored in the filename when extraction from BORIS
+                gravel_class = {'road class' : entry.name[0:7]} 
+                
+                #concatenating all features into a single dictionary
+                single_clip_dict = {**gravel_class,**number_zcr ,**spc_agg, **spb_agg, **number_onsets, **onset_strength_agg, **rms_agg, **mfcc_dict}
+                
+                #adding dictionary of features for each soundclip to a list
+                data.append(single_clip_dict)
+        return(data) # return list of lists holding data for all clips found in set folder.
+        
+        
+# Example of loading and extractiong features from a folder containing audio clips
+test_list = feature_extraction("C:/Users/Some_User/Audio_clips")
+sound_feature_dataframe = pandas.DataFrame(test_list)
+        
+    
+    
