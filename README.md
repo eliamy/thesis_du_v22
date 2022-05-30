@@ -5,4 +5,10 @@ Consists of two main parts. First one for extracting sound features from folders
 The second part consists of functions to perfrom cross-validation and gridsearch on selected classification models. Here these functions are semi-homemade. A faster more dynamic approach would be to use a pipeline to perform these actions. Or split the grid_eval() functions into sub-functions.
 
 Recommended reading order is:
-1. Sound feature extraction 
+1. Extraction_Sound_Features
+2. Model evaluation and helper functions
+3. Grid search SVM
+4. Grid search Random Forest
+5. Grid search EBT
+6. Models in Binary Setting
+7. Confusion matrices
