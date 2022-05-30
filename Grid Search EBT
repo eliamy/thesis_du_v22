@@ -1,0 +1,50 @@
+#Function for grid search of parameters for Ensemble Of Bagged Trees. Same as other two grid search functions but adjusted for EBT
+def grid_eval_ebt(data, features_to_test, oversampling_bol, anova_bol, pca_bol, param_list_ebt):
+    best_params = []
+    best_f1 = 0
+
+    for k in range(len(param_list_ebt)):
+            print(k)
+            model = BaggingClassifier(DecisionTreeClassifier(
+                        max_depth = param_list_ebt[k][0],
+                        min_samples_leaf = param_list_ebt[k][1],
+                        min_samples_split = param_list_ebt[k][2],
+                        criterion = param_list_ebt[k][3]), #note: some params are passed to DecisionTree and some passed to the "Bagging"-part
+                        n_estimators = param_list_ebt[k][4], max_samples = param_list_ebt[k][5], n_jobs = -1)  #bagging parameters
+
+            predictions, true_label = evaluate_model(data, model, features_to_test, 
+                                                     over = oversampling_bol, do_anova = anova_bol, do_pca = pca_bol)
+
+            y_true = numpy.concatenate(true_label)
+            y_pred = numpy.concatenate(predictions)
+
+            f_one = f1_score(y_true, y_pred, average = 'macro')
+
+            if f_one > best_f1:
+                best_f1 = f_one
+                best_pred = y_pred
+                best_y = y_true
+
+                best_params = [param_list_ebt[k][0], param_list_ebt[k][1], param_list_ebt[k][2], param_list_ebt[k][3],
+                               param_list_ebt[k][4], param_list_ebt[k][5]]
+    return(best_pred, best_y, best_params)
+    
+#Example of grid search of EBT model paramaters
+# Parameters to be tested in all different settings.
+# starting of using larger step-sizes between parameters then running again with reduced "search-grid" with smaller step sizes
+
+dt_max_depth = [None, 30, 50]
+dt_min_samples_leaf = [2,5,10]
+dt_min_samples_split = [2, 4, 10]
+dt_criterion = ['entropy','gini']
+n_estimators = [200, 500, 750]
+max_samples = [0.3, 0.5, 0.8]
+
+param_list_ebt = list(itertools.product(dt_max_depth, dt_min_samples_leaf,
+                                       dt_min_samples_split, dt_criterion, n_estimators, max_samples))
+
+# using base features, using oversampling
+best_pred_ebt, best_y_ebt, best_params_ebt = grid_eval_ebt(data, features, True, True, False, param_list_ebt)
+print('\n*Classification Report:\n',classification_report(best_y_ebt, best_pred_ebt, target_names = target_names))
+print(best_params_ebt)
+
