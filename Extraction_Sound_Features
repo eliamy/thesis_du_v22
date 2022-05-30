@@ -121,6 +121,7 @@ def feature_extraction(audio_path):
 # Example of loading and extractiong features from a folder containing audio clips
 test_list = feature_extraction("C:/Users/Some_User/Audio_clips")
 sound_feature_dataframe = pandas.DataFrame(test_list)
-        
-    
+
+#Saving to csv for use in later functions 
+sound_feature_dataframe.to_csv('C:/Some_User/Some_Folder/sound_features.csv')
     
